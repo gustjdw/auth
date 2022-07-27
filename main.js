@@ -3,15 +3,22 @@ const app = express();
 var fs = require('fs');
 var bodyParser = require('body-parser');
 var compression = require('compression');
+var session = require('express-session');
+var FileStore = require('session-file-store')(session);
 var helmet = require('helmet');
-
-var indexRouter = require('./routes/index');
-var topicRouter = require('./routes/topic');
 
 app.use(helmet());
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(compression());
+
+app.use(session({
+  secret: 'tlsdydeo',
+  resave: false,
+  saveUninitialized: true,
+  store: new FileStore()
+}));
+
 app.get('*', function (request, response, next) {
   fs.readdir('./data', function (error, filelist) {
     request.list = filelist;
@@ -19,8 +26,13 @@ app.get('*', function (request, response, next) {
   });
 });
 
+var indexRouter = require('./routes/index');
+var topicRouter = require('./routes/topic');
+var authRouter = require('./routes/auth');
+
 app.use('/', indexRouter);
 app.use('/topic', topicRouter);
+app.use('/auth', authRouter);
 
 app.use(function (request, response, next) {
   response.status(404).send('Sorry cant find that!');
